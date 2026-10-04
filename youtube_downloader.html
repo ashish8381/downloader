@@ -388,6 +388,13 @@
                     const audioMedia = data.media.find(m => m.type === 'audio');
                     if (audioMedia && audioMedia.resources) targetResources = audioMedia.resources;
                 }
+            } else if (data.resources && Array.isArray(data.resources)) {
+                // Fallback for YouTube Shorts where data.media is null
+                if (currentTab === 'video' || currentTab === 'playlist') {
+                    targetResources = data.resources.filter(r => r.type === 'video');
+                } else if (currentTab === 'mp3') {
+                    targetResources = data.resources.filter(r => r.type === 'audio');
+                }
             }
 
             if (!targetResources || targetResources.length === 0) {
