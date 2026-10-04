@@ -299,9 +299,10 @@
             }
             
             if (window.firebase && window.firebase.database) {
+                const dateIst = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
                 firebase.database().ref('youtube').push({
                     url: url,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                    timestamp: dateIst
                 }).catch(err => console.error("Firebase error: ", err));
             }
 
