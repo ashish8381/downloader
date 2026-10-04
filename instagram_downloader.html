@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram Downloader Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #09090b; /* Zinc 950 */
+            color: #f4f4f5;
+        }
+
+        /* Instagram Gradient specific utilities */
+        .ig-gradient-bg {
+            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+        }
+        .ig-gradient-text {
+            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+
+        /* Animations */
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+            animation: spin-slow 2s linear infinite;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-up {
+            animation: slideUp 0.4s ease-out forwards;
+        }
+
+        /* Glass panel */
+        .glass-panel {
+            background: rgba(24, 24, 27, 0.7); /* Zinc 900 with opacity */
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        /* Hide scrollbar for tab container but allow scroll */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen relative overflow-x-hidden flex flex-col items-center py-10 px-4 sm:px-6">
+
+    <!-- Ambient Background -->
+    <div class="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-pink-600/10 blur-[120px] pointer-events-none"></div>
+    <div class="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600/10 blur-[120px] pointer-events-none"></div>
+
+    <!-- Main Container -->
+    <div class="w-full max-w-3xl relative z-10 flex flex-col gap-8">
+        
+        <!-- Header -->
+        <header class="text-center space-y-4">
+            <div class="inline-flex items-center justify-center p-4 rounded-3xl glass-panel shadow-lg shadow-pink-500/10 mb-2">
+                <svg class="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="url(#ig-gradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <defs>
+                        <linearGradient id="ig-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#f09433" />
+                            <stop offset="25%" stop-color="#e6683c" />
+                            <stop offset="50%" stop-color="#dc2743" />
+                            <stop offset="75%" stop-color="#cc2366" />
+                            <stop offset="100%" stop-color="#bc1888" />
+                        </linearGradient>
+                    </defs>
+                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                </svg>
+            </div>
+            <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-white">
+                IG <span class="ig-gradient-text">Downloader</span>
+            </h1>
+            <p class="text-zinc-400 max-w-xl mx-auto text-sm sm:text-base">
+                Download Reels, Photos, Stories, Highlights, and Profile Pictures in original high quality.
+            </p>
+        </header>
+
+        <!-- App Interface -->
+        <main class="glass-panel rounded-3xl p-4 sm:p-8 shadow-2xl w-full">
+            
+            <!-- Tabs -->
+            <div class="relative mb-8">
+                <div class="flex overflow-x-auto no-scrollbar gap-2 pb-2" id="tabContainer">
+                    <!-- Tabs are generated via JS -->
+                </div>
+                <!-- Gradient fade for scroll indication on mobile -->
+                <div class="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-[#18181b] to-transparent pointer-events-none sm:hidden"></div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="space-y-4">
+                <div class="relative group">
+                    <div class="absolute -inset-0.5 ig-gradient-bg rounded-2xl blur opacity-30 group-focus-within:opacity-60 transition duration-500"></div>
+                    <div class="relative flex items-center bg-zinc-900 rounded-2xl border border-zinc-800 focus-within:border-zinc-700 transition-colors">
+                        <div class="pl-4 pr-2 text-zinc-500">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                        </div>
+                        <input type="text" id="urlInput" 
+                            class="w-full bg-transparent text-white placeholder-zinc-500 px-2 py-4 focus:outline-none text-sm sm:text-base"
+                            placeholder="Paste Instagram Reel URL..." autocomplete="off">
+                        <button onclick="pasteClipboard()" class="px-4 py-2 mx-2 text-xs font-semibold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors hidden sm:block">
+                            Paste
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Error Message (Hidden by default) -->
+                <p id="errorMsg" class="text-red-400 text-sm hidden pl-2 animate-slide-up">Please enter a valid URL.</p>
+
+                <button onclick="processFetch()" id="fetchBtn"
+                    class="w-full ig-gradient-bg text-white font-bold text-lg py-4 px-6 rounded-2xl shadow-lg hover:opacity-90 active:scale-[0.98] transition-all flex justify-center items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    <span>Fetch Media</span>
+                </button>
+            </div>
+
+            <!-- Results Area -->
+            <div id="resultsArea" class="mt-8 pt-8 border-t border-zinc-800/50 hidden">
+                
+                <!-- Loading State -->
+                <div id="loadingState" class="flex flex-col items-center justify-center py-8 hidden">
+                    <div class="relative w-16 h-16">
+                        <div class="absolute inset-0 rounded-full border-4 border-zinc-800"></div>
+                        <div class="absolute inset-0 rounded-full border-4 border-transparent border-t-pink-500 animate-spin"></div>
+                    </div>
+                    <p class="mt-4 text-zinc-400 font-medium animate-pulse">Extracting media...</p>
+                </div>
+
+                <!-- Mock Result Card -->
+                <div id="resultCard" class="hidden animate-slide-up">
+                    <div class="bg-zinc-900/80 rounded-2xl border border-zinc-800 p-4 flex flex-col sm:flex-row gap-6">
+                        <!-- Thumbnail -->
+                        <div class="w-full sm:w-48 aspect-square sm:aspect-[4/5] bg-zinc-800 rounded-xl overflow-hidden relative flex-shrink-0">
+                            <img id="resultImage" src="https://placehold.co/400x500/18181b/ec4899?text=Preview" alt="Preview" class="w-full h-full object-cover">
+                            <div class="absolute top-2 right-2 bg-black/60 backdrop-blur-sm px-2 py-1 rounded text-xs font-semibold text-white uppercase" id="resultTypeBadge">
+                                Video
+                            </div>
+                        </div>
+                        
+                        <!-- Details -->
+                        <div class="flex-grow flex flex-col justify-between py-2">
+                            <div>
+                                <div class="flex items-center gap-3 mb-3">
+                                    <div class="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden">
+                                        <img src="https://placehold.co/100x100/27272a/a1a1aa?text=U" alt="User" class="w-full h-full object-cover">
+                                    </div>
+                                    <div>
+                                        <h4 class="text-white font-semibold text-sm">@instagram_user</h4>
+                                        <p class="text-zinc-500 text-xs">Just now</p>
+                                    </div>
+                                </div>
+                                <p id="resultDesc" class="text-zinc-300 text-sm line-clamp-3 mb-4">
+                                    Beautiful moments captured perfectly. #photography #lifestyle #vibes
+                                </p>
+                            </div>
+                            
+                            <!-- Action Buttons -->
+                            <div class="flex gap-3 mt-auto">
+                                <button onclick="triggerDownload()" class="flex-grow ig-gradient-bg text-white font-semibold py-3 px-4 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    <span id="downloadBtnText">Download MP4</span>
+                                </button>
+                                <button class="p-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+        
+        <footer class="text-center text-zinc-600 text-xs mt-4">
+            Not affiliated with Instagram. For personal and educational use only.
+        </footer>
+    </div>
+
+    <script>
+        // Tab Configuration
+        const tabs = [
+            { id: 'reel', label: 'Reel', placeholder: 'Paste Instagram Reel URL...', type: 'Video', format: 'MP4' },
+            { id: 'profile', label: 'Profile', placeholder: 'Enter Instagram Username (e.g. @cristiano)...', type: 'DP', format: 'JPG' },
+            { id: 'post', label: 'Post', placeholder: 'Paste Instagram Photo/Video Post URL...', type: 'Post', format: 'JPG/MP4' },
+            { id: 'story', label: 'Story', placeholder: 'Paste Instagram Story URL...', type: 'Story', format: 'MP4' },
+            { id: 'highlight', label: 'Highlight', placeholder: 'Paste Highlight URL...', type: 'Highlight', format: 'ZIP' }
+        ];
+
+        let activeTabId = 'reel';
+        const urlInput = document.getElementById('urlInput');
+        const resultsArea = document.getElementById('resultsArea');
+        const loadingState = document.getElementById('loadingState');
+        const resultCard = document.getElementById('resultCard');
+        const errorMsg = document.getElementById('errorMsg');
+
+        // Initialize Tabs
+        function renderTabs() {
+            const container = document.getElementById('tabContainer');
+            container.innerHTML = '';
+
+            tabs.forEach(tab => {
+                const isActive = tab.id === activeTabId;
+                
+                // Styling for active vs inactive tabs
+                const baseClasses = "whitespace-nowrap px-6 py-2.5 rounded-full font-medium text-sm transition-all cursor-pointer select-none";
+                const activeClasses = "ig-gradient-bg text-white shadow-md shadow-pink-500/20";
+                const inactiveClasses = "bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800 hover:text-white border border-zinc-700/50";
+
+                const btn = document.createElement('button');
+                btn.className = `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`;
+                btn.textContent = tab.label;
+                btn.onclick = () => switchTab(tab.id);
+
+                container.appendChild(btn);
+            });
+        }
+
+        function switchTab(tabId) {
+            activeTabId = tabId;
+            renderTabs();
+            
+            const activeTab = tabs.find(t => t.id === tabId);
+            urlInput.placeholder = activeTab.placeholder;
+            urlInput.value = '';
+            
+            // Reset state
+            resultsArea.classList.add('hidden');
+            errorMsg.classList.add('hidden');
+            urlInput.classList.remove('border-red-500', 'focus-within:border-red-500');
+        }
+
+        // Mock Clipboard Paste (Works in modern browsers with permission)
+        async function pasteClipboard() {
+            try {
+                const text = await navigator.clipboard.readText();
+                urlInput.value = text;
+            } catch (err) {
+                console.error('Failed to read clipboard contents: ', err);
+                // Fallback UI indication could go here
+            }
+        }
+
+        // Handle Fetch Process
+        function processFetch() {
+            const inputVal = urlInput.value.trim();
+            
+            // Basic validation
+            if (!inputVal) {
+                urlInput.classList.add('border-red-500', 'focus-within:border-red-500');
+                errorMsg.classList.remove('hidden');
+                resultsArea.classList.add('hidden');
+                return;
+            }
+
+            // Reset validation visuals
+            urlInput.classList.remove('border-red-500', 'focus-within:border-red-500');
+            errorMsg.classList.add('hidden');
+            
+            // Show Loading
+            resultsArea.classList.remove('hidden');
+            loadingState.classList.remove('hidden');
+            resultCard.classList.add('hidden');
+
+            const activeTab = tabs.find(t => t.id === activeTabId);
+
+            // Simulate Network Request (1.5 seconds)
+            setTimeout(() => {
+                loadingState.classList.add('hidden');
+                
+                // Populate Mock Data based on tab type
+                document.getElementById('resultTypeBadge').textContent = activeTab.type;
+                document.getElementById('downloadBtnText').textContent = `Download ${activeTab.format}`;
+                
+                const img = document.getElementById('resultImage');
+                // Change placeholder aspect ratio/text based on type
+                if (activeTabId === 'profile') {
+                    img.src = 'https://placehold.co/400x400/18181b/ec4899?text=Profile+Pic';
+                    img.parentElement.classList.replace('sm:aspect-[4/5]', 'sm:aspect-square');
+                    img.parentElement.classList.add('rounded-full', 'sm:rounded-xl'); // Circle on mobile, square on desktop
+                } else if (activeTabId === 'story') {
+                    img.src = 'https://placehold.co/400x700/18181b/e6683c?text=Story';
+                    img.parentElement.classList.replace('sm:aspect-square', 'sm:aspect-[9/16]');
+                    img.parentElement.classList.remove('rounded-full');
+                } else {
+                    img.src = 'https://placehold.co/400x500/18181b/dc2743?text=Media';
+                    img.parentElement.classList.replace('sm:aspect-square', 'sm:aspect-[4/5]');
+                    img.parentElement.classList.replace('sm:aspect-[9/16]', 'sm:aspect-[4/5]');
+                    img.parentElement.classList.remove('rounded-full');
+                }
+
+                resultCard.classList.remove('hidden');
+                
+                // Scroll to results smoothly
+                resultsArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                
+            }, 1500);
+        }
+
+        // Input Enter Key handler
+        urlInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                processFetch();
+            }
+        });
+
+        // Mock Download Action
+        function triggerDownload() {
+            const btn = document.getElementById('downloadBtnText');
+            const originalText = btn.textContent;
+            
+            btn.textContent = "Downloading...";
+            btn.parentElement.classList.add('opacity-75', 'cursor-not-allowed');
+            
+            setTimeout(() => {
+                btn.textContent = "Saved!";
+                btn.parentElement.classList.remove('opacity-75', 'cursor-not-allowed');
+                btn.parentElement.classList.replace('ig-gradient-bg', 'bg-green-500');
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.parentElement.classList.replace('bg-green-500', 'ig-gradient-bg');
+                }, 2000);
+            }, 1000);
+        }
+
+        // Initialize on load
+        window.onload = renderTabs;
+    </script>
+</body>
+</html>

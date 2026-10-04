@@ -1,0 +1,11 @@
+{
+  "hosting": {
+    "site": "d0wnl0ader",
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}

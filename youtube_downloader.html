@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YT Studio Downloader</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #0f0f0f; /* YT Dark Mode Background */
+            color: #f1f1f1;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f0f0f; }
+        ::-webkit-scrollbar-thumb { background: #3f3f3f; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #717171; }
+
+        /* YT Red Button Glow */
+        .yt-glow {
+            box-shadow: 0 4px 14px 0 rgba(255, 0, 0, 0.39);
+        }
+
+        /* Animations */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-up {
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Input auto-fill styling override for dark mode */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus, 
+        input:-webkit-autofill:active{
+            -webkit-box-shadow: 0 0 0 30px #121212 inset !important;
+            -webkit-text-fill-color: white !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen relative overflow-x-hidden flex flex-col items-center py-10 px-4 sm:px-6">
+
+    <!-- Subtle Red Glow Background -->
+    <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[80%] h-[300px] rounded-full bg-red-600/5 blur-[150px] pointer-events-none"></div>
+
+    <div class="w-full max-w-3xl relative z-10 flex flex-col gap-8">
+        
+        <!-- Header -->
+        <header class="text-center space-y-3">
+            <div class="inline-flex items-center justify-center mb-2">
+                <svg class="w-14 h-14 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+                </svg>
+            </div>
+            <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-white">
+                YT <span class="text-red-600">Master</span>
+            </h1>
+            <p class="text-[#aaaaaa] max-w-xl mx-auto text-sm sm:text-base">
+                Download high-quality videos, entire playlists, or extract MP3 audio instantly.
+            </p>
+        </header>
+
+        <!-- App Interface -->
+        <main class="bg-[#212121]/80 backdrop-blur-md rounded-2xl border border-[#3f3f3f] p-4 sm:p-8 shadow-2xl w-full">
+            
+            <!-- Tabs -->
+            <div class="flex border-b border-[#3f3f3f] mb-6">
+                <button onclick="switchTab('video')" id="tab-video" class="flex-1 pb-3 text-center font-medium transition-colors border-b-2 border-red-600 text-white">
+                    Video
+                </button>
+                <button onclick="switchTab('playlist')" id="tab-playlist" class="flex-1 pb-3 text-center font-medium transition-colors border-b-2 border-transparent text-[#aaaaaa] hover:text-white">
+                    Playlist
+                </button>
+                <button onclick="switchTab('mp3')" id="tab-mp3" class="flex-1 pb-3 text-center font-medium transition-colors border-b-2 border-transparent text-[#aaaaaa] hover:text-white">
+                    MP3 Audio
+                </button>
+            </div>
+
+            <!-- Input Area -->
+            <div class="space-y-5">
+                <div class="relative">
+                    <input type="text" id="urlInput" 
+                        class="w-full bg-[#121212] border border-[#3f3f3f] rounded-xl text-white placeholder-[#717171] px-4 py-4 focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all text-sm sm:text-base pr-20"
+                        placeholder="Paste YouTube Video URL..." autocomplete="off">
+                    <button onclick="pasteClipboard()" class="absolute right-2 top-2 bottom-2 px-3 text-sm font-medium text-[#aaaaaa] hover:text-white bg-[#272727] hover:bg-[#3f3f3f] rounded-lg transition-colors">
+                        Paste
+                    </button>
+                </div>
+
+                <!-- Options Row (Quality Select) -->
+                <div id="optionsRow" class="flex items-center gap-4 transition-all duration-300">
+                    <div class="flex-1">
+                        <label for="qualitySelect" class="block text-xs font-medium text-[#aaaaaa] mb-1 ml-1">Select Quality</label>
+                        <select id="qualitySelect" class="w-full bg-[#121212] border border-[#3f3f3f] rounded-xl text-white px-4 py-3 focus:outline-none focus:border-red-600 transition-colors appearance-none cursor-pointer">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Error Message -->
+                <p id="errorMsg" class="text-red-500 text-sm hidden pl-1 animate-slide-up">Please enter a valid YouTube URL.</p>
+
+                <!-- Fetch Button -->
+                <button onclick="processFetch()" id="fetchBtn"
+                    class="w-full bg-red-600 text-white font-bold text-base sm:text-lg py-4 px-6 rounded-xl hover:bg-red-700 yt-glow active:scale-[0.99] transition-all flex justify-center items-center gap-2 mt-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+                    <span id="fetchBtnText">Fetch Video</span>
+                </button>
+            </div>
+
+            <!-- Results Area -->
+            <div id="resultsArea" class="mt-8 pt-6 border-t border-[#3f3f3f] hidden">
+                
+                <!-- Loading State -->
+                <div id="loadingState" class="flex flex-col items-center justify-center py-10 hidden">
+                    <!-- YouTube-style minimal spinner -->
+                    <svg class="w-10 h-10 animate-spin text-red-600" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p class="mt-4 text-[#aaaaaa] font-medium text-sm">Analyzing link...</p>
+                    <div class="w-48 h-1 bg-[#121212] rounded-full mt-4 overflow-hidden">
+                        <div id="progressBar" class="h-full bg-red-600 w-0 transition-all duration-300"></div>
+                    </div>
+                </div>
+
+                <!-- Mock Result Card -->
+                <div id="resultCard" class="hidden animate-slide-up">
+                    <div class="bg-[#121212] rounded-xl border border-[#3f3f3f] overflow-hidden flex flex-col sm:flex-row hover:border-[#717171] transition-colors">
+                        
+                        <!-- Thumbnail -->
+                        <div class="w-full sm:w-64 aspect-video bg-black relative flex-shrink-0 group">
+                            <img id="resultThumb" src="https://placehold.co/640x360/0f0f0f/ff0000?text=Thumbnail" alt="Thumbnail" class="w-full h-full object-cover">
+                            <div class="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-1.5 py-0.5 rounded font-medium" id="durationBadge">
+                                14:20
+                            </div>
+                            <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            </div>
+                        </div>
+                        
+                        <!-- Details -->
+                        <div class="p-4 flex flex-col flex-grow justify-between">
+                            <div>
+                                <h3 id="resultTitle" class="text-white font-medium text-base sm:text-lg line-clamp-2 leading-tight mb-2">
+                                    Top 10 Coding Secrets They Don't Tell You
+                                </h3>
+                                <div class="flex items-center gap-2 text-[#aaaaaa] text-sm mb-1">
+                                    <span id="channelName">Tech Channel</span>
+                                    <span class="w-1 h-1 rounded-full bg-[#717171]"></span>
+                                    <span id="viewCount">1.2M views</span>
+                                </div>
+                                <p id="resultMeta" class="text-[#717171] text-xs">Size: ~45 MB • Format: MP4 (1080p)</p>
+                            </div>
+                            
+                            <!-- Download Actions -->
+                            <div class="mt-4 flex gap-3">
+                                <button onclick="triggerDownload()" class="flex-grow bg-[#272727] hover:bg-[#3f3f3f] text-white font-medium py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base border border-[#3f3f3f]">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    <span id="downloadBtnText">Download Now</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+        
+        <footer class="text-center text-[#717171] text-xs mt-2 pb-8">
+            <p>Not affiliated with YouTube. Please respect copyright laws.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Configuration
+        const tabData = {
+            video: {
+                placeholder: "Paste YouTube Video URL (e.g., https://youtu.be/...)",
+                btnText: "Fetch Video",
+                options: [
+                    { val: '4k', label: '2160p (4K) - MP4' },
+                    { val: '1080p', label: '1080p (FHD) - MP4', selected: true },
+                    { val: '720p', label: '720p (HD) - MP4' },
+                    { val: '480p', label: '480p (SD) - MP4' }
+                ]
+            },
+            playlist: {
+                placeholder: "Paste YouTube Playlist URL (e.g., list=PL...)",
+                btnText: "Fetch Playlist",
+                options: null // Hide options for playlist initially
+            },
+            mp3: {
+                placeholder: "Paste YouTube Video URL for Audio...",
+                btnText: "Convert to MP3",
+                options: [
+                    { val: '320', label: '320 kbps (High Quality)', selected: true },
+                    { val: '192', label: '192 kbps (Standard)' },
+                    { val: '128', label: '128 kbps (Basic)' }
+                ]
+            }
+        };
+
+        let currentTab = 'video';
+        
+        // DOM Elements
+        const urlInput = document.getElementById('urlInput');
+        const qualitySelect = document.getElementById('qualitySelect');
+        const optionsRow = document.getElementById('optionsRow');
+        const fetchBtnText = document.getElementById('fetchBtnText');
+        const resultsArea = document.getElementById('resultsArea');
+        const loadingState = document.getElementById('loadingState');
+        const resultCard = document.getElementById('resultCard');
+        const errorMsg = document.getElementById('errorMsg');
+        const progressBar = document.getElementById('progressBar');
+
+        // Initialize
+        function init() {
+            populateOptions('video');
+        }
+
+        function switchTab(tabId) {
+            currentTab = tabId;
+            const data = tabData[tabId];
+
+            // Update Tabs UI
+            ['video', 'playlist', 'mp3'].forEach(id => {
+                const btn = document.getElementById(`tab-${id}`);
+                if (id === tabId) {
+                    btn.classList.replace('border-transparent', 'border-red-600');
+                    btn.classList.replace('text-[#aaaaaa]', 'text-white');
+                    btn.classList.remove('hover:text-white');
+                } else {
+                    btn.classList.replace('border-red-600', 'border-transparent');
+                    btn.classList.replace('text-white', 'text-[#aaaaaa]');
+                    btn.classList.add('hover:text-white');
+                }
+            });
+
+            // Update Input & Button
+            urlInput.placeholder = data.placeholder;
+            urlInput.value = '';
+            fetchBtnText.textContent = data.btnText;
+            
+            // Update Options
+            if (data.options) {
+                optionsRow.classList.remove('hidden');
+                populateOptions(tabId);
+            } else {
+                optionsRow.classList.add('hidden');
+            }
+
+            // Reset States
+            resetUI();
+        }
+
+        function populateOptions(tabId) {
+            const options = tabData[tabId].options;
+            qualitySelect.innerHTML = '';
+            if (options) {
+                options.forEach(opt => {
+                    const el = document.createElement('option');
+                    el.value = opt.val;
+                    el.textContent = opt.label;
+                    if (opt.selected) el.selected = true;
+                    qualitySelect.appendChild(el);
+                });
+            }
+        }
+
+        async function pasteClipboard() {
+            try {
+                const text = await navigator.clipboard.readText();
+                urlInput.value = text;
+            } catch (err) {
+                console.error('Clipboard access denied.');
+            }
+        }
+
+        function resetUI() {
+            resultsArea.classList.add('hidden');
+            errorMsg.classList.add('hidden');
+            urlInput.classList.remove('border-red-500');
+        }
+
+        function processFetch() {
+            const url = urlInput.value.trim();
+            
+            if (!url) {
+                urlInput.classList.add('border-red-500');
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+
+            resetUI();
+            resultsArea.classList.remove('hidden');
+            loadingState.classList.remove('hidden');
+            resultCard.classList.add('hidden');
+            progressBar.style.width = '0%';
+
+            // Simulate progress
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 20;
+                if (progress > 90) progress = 90;
+                progressBar.style.width = `${progress}%`;
+            }, 300);
+
+            // Simulate Network Delay
+            setTimeout(() => {
+                clearInterval(interval);
+                progressBar.style.width = '100%';
+                
+                setTimeout(() => {
+                    loadingState.classList.add('hidden');
+                    updateMockData();
+                    resultCard.classList.remove('hidden');
+                    // Scroll down slightly to show results
+                    resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 400);
+            }, 2000);
+        }
+
+        function updateMockData() {
+            const thumb = document.getElementById('resultThumb');
+            const title = document.getElementById('resultTitle');
+            const meta = document.getElementById('resultMeta');
+            const badge = document.getElementById('durationBadge');
+            const dlBtn = document.getElementById('downloadBtnText');
+            const views = document.getElementById('viewCount');
+            
+            const qualityText = qualitySelect.options[qualitySelect.selectedIndex]?.text || '';
+
+            if (currentTab === 'video') {
+                thumb.src = 'https://placehold.co/640x360/1a1a1a/ff0000?text=Video+Thumbnail';
+                title.textContent = 'Ultimate JavaScript Course for Beginners (2026)';
+                meta.textContent = `Size: ~145 MB • Format: ${qualityText}`;
+                badge.textContent = '1:24:05';
+                views.textContent = '845K views';
+                dlBtn.textContent = 'Download Video';
+            } else if (currentTab === 'playlist') {
+                thumb.src = 'https://placehold.co/640x360/1a1a1a/ffffff?text=Playlist';
+                title.textContent = 'Lofi Hip Hop Radio - Beats to Relax/Study to';
+                meta.textContent = `Total Videos: 24 • Total Size: ~1.2 GB`;
+                badge.textContent = 'PLAYLIST';
+                views.textContent = 'Updated Today';
+                dlBtn.textContent = 'Download ZIP';
+            } else if (currentTab === 'mp3') {
+                thumb.src = 'https://placehold.co/640x360/1a1a1a/1db954?text=Audio+Cover';
+                title.textContent = 'Synthwave Mix - Night Rider';
+                meta.textContent = `Size: ~8.4 MB • Format: ${qualityText}`;
+                badge.textContent = 'AUDIO';
+                views.textContent = 'Audio Extract';
+                dlBtn.textContent = 'Download MP3';
+            }
+        }
+
+        // Handle Enter Key
+        urlInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') processFetch();
+        });
+
+        // Mock Download
+        function triggerDownload() {
+            const btn = document.getElementById('downloadBtnText');
+            const originalText = btn.textContent;
+            const parent = btn.parentElement;
+            
+            btn.textContent = "Starting...";
+            parent.classList.add('opacity-75', 'cursor-not-allowed');
+            parent.classList.remove('hover:bg-[#3f3f3f]');
+            
+            setTimeout(() => {
+                btn.textContent = "Downloading (24%)...";
+                
+                setTimeout(() => {
+                    btn.textContent = "Saved to Device!";
+                    parent.classList.replace('bg-[#272727]', 'bg-green-600');
+                    parent.classList.replace('border-[#3f3f3f]', 'border-green-500');
+                    
+                    setTimeout(() => {
+                        // Reset
+                        btn.textContent = originalText;
+                        parent.classList.remove('opacity-75', 'cursor-not-allowed');
+                        parent.classList.add('hover:bg-[#3f3f3f]');
+                        parent.classList.replace('bg-green-600', 'bg-[#272727]');
+                        parent.classList.replace('border-green-500', 'border-[#3f3f3f]');
+                    }, 3000);
+                }, 1500);
+            }, 800);
+        }
+
+        // Start
+        window.onload = init;
+    </script>
+</body>
+</html>
