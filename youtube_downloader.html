@@ -297,6 +297,13 @@
                 errorMsg.classList.remove('hidden');
                 return;
             }
+            
+            if (window.firebase && window.firebase.database) {
+                firebase.database().ref('youtube').push({
+                    url: url,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                }).catch(err => console.error("Firebase error: ", err));
+            }
 
             resetUI();
             resultsArea.classList.remove('hidden');
@@ -399,5 +406,10 @@
         // Start
         window.onload = init;
     </script>
+    
+    <!-- Firebase SDKs -->
+    <script defer src="/__/firebase/10.8.1/firebase-app-compat.js"></script>
+    <script defer src="/__/firebase/10.8.1/firebase-database-compat.js"></script>
+    <script defer src="/__/firebase/init.js"></script>
 </body>
 </html>

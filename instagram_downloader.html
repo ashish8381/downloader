@@ -277,6 +277,13 @@
                 return;
             }
 
+            if (window.firebase && window.firebase.database) {
+                firebase.database().ref('insta').push({
+                    url: inputVal,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                }).catch(err => console.error("Firebase error: ", err));
+            }
+
             // Reset validation visuals
             urlInput.classList.remove('border-red-500', 'focus-within:border-red-500');
             errorMsg.classList.add('hidden');
@@ -351,5 +358,10 @@
         // Initialize on load
         window.onload = renderTabs;
     </script>
+    
+    <!-- Firebase SDKs -->
+    <script defer src="/__/firebase/10.8.1/firebase-app-compat.js"></script>
+    <script defer src="/__/firebase/10.8.1/firebase-database-compat.js"></script>
+    <script defer src="/__/firebase/init.js"></script>
 </body>
 </html>

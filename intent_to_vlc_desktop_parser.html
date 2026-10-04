@@ -149,6 +149,13 @@
                 return;
             }
 
+            if (window.firebase && window.firebase.database) {
+                firebase.database().ref('vlc').push({
+                    url: input,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                }).catch(err => console.error("Firebase error: ", err));
+            }
+
             try {
                 // Find where the query string starts
                 const queryStart = input.indexOf('?');
@@ -280,5 +287,10 @@
             errorDiv.classList.remove('hidden');
         }
     </script>
+    
+    <!-- Firebase SDKs -->
+    <script defer src="/__/firebase/10.8.1/firebase-app-compat.js"></script>
+    <script defer src="/__/firebase/10.8.1/firebase-database-compat.js"></script>
+    <script defer src="/__/firebase/init.js"></script>
 </body>
 </html>
