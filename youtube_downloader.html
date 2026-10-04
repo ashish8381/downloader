@@ -318,6 +318,8 @@
 
             try {
                 const apiUrl = `https://api.vidssave.com/api/contentsite_api/media/parse?auth=20250901majwlqo&link=${encodeURIComponent(url)}`;
+                console.log("Calling API URL:", apiUrl);
+                
                 const response = await fetch(apiUrl);
                 const data = await response.json();
 
