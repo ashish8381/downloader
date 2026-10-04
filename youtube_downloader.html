@@ -69,18 +69,7 @@
         <!-- App Interface -->
         <main class="bg-[#212121]/80 backdrop-blur-md rounded-2xl border border-[#3f3f3f] p-4 sm:p-8 shadow-2xl w-full">
             
-            <!-- Tabs -->
-            <div class="flex border-b border-[#3f3f3f] mb-6">
-                <button onclick="switchTab('video')" id="tab-video" class="flex-1 pb-3 text-center font-medium transition-colors border-b-2 border-red-600 text-white">
-                    Video
-                </button>
-                <button onclick="switchTab('playlist')" id="tab-playlist" class="flex-1 pb-3 text-center font-medium transition-colors border-b-2 border-transparent text-[#aaaaaa] hover:text-white">
-                    Playlist
-                </button>
-                <button onclick="switchTab('mp3')" id="tab-mp3" class="flex-1 pb-3 text-center font-medium transition-colors border-b-2 border-transparent text-[#aaaaaa] hover:text-white">
-                    MP3 Audio
-                </button>
-            </div>
+            <!-- Removed Tabs -->
 
             <!-- Input Area -->
             <div class="space-y-5">
@@ -93,15 +82,7 @@
                     </button>
                 </div>
 
-                <!-- Options Row (Quality Select) -->
-                <div id="optionsRow" class="flex items-center gap-4 transition-all duration-300">
-                    <div class="flex-1">
-                        <label for="qualitySelect" class="block text-xs font-medium text-[#aaaaaa] mb-1 ml-1">Select Quality</label>
-                        <select id="qualitySelect" class="w-full bg-[#121212] border border-[#3f3f3f] rounded-xl text-white px-4 py-3 focus:outline-none focus:border-red-600 transition-colors appearance-none cursor-pointer">
-                            <!-- Populated by JS -->
-                        </select>
-                    </div>
-                </div>
+
 
                 <!-- Error Message -->
                 <p id="errorMsg" class="text-red-500 text-sm hidden pl-1 animate-slide-up">Please enter a valid YouTube URL.</p>
@@ -180,39 +161,8 @@
 
     <script>
         // Configuration
-        const tabData = {
-            video: {
-                placeholder: "Paste YouTube Video URL (e.g., https://youtu.be/...)",
-                btnText: "Fetch Video",
-                options: [
-                    { val: '4k', label: '2160p (4K) - MP4' },
-                    { val: '1080p', label: '1080p (FHD) - MP4', selected: true },
-                    { val: '720p', label: '720p (HD) - MP4' },
-                    { val: '480p', label: '480p (SD) - MP4' }
-                ]
-            },
-            playlist: {
-                placeholder: "Paste YouTube Playlist URL (e.g., list=PL...)",
-                btnText: "Fetch Playlist",
-                options: null // Hide options for playlist initially
-            },
-            mp3: {
-                placeholder: "Paste YouTube Video URL for Audio...",
-                btnText: "Convert to MP3",
-                options: [
-                    { val: '320', label: '320 kbps (High Quality)', selected: true },
-                    { val: '192', label: '192 kbps (Standard)' },
-                    { val: '128', label: '128 kbps (Basic)' }
-                ]
-            }
-        };
-
-        let currentTab = 'video';
-        
         // DOM Elements
         const urlInput = document.getElementById('urlInput');
-        const qualitySelect = document.getElementById('qualitySelect');
-        const optionsRow = document.getElementById('optionsRow');
         const fetchBtnText = document.getElementById('fetchBtnText');
         const resultsArea = document.getElementById('resultsArea');
         const loadingState = document.getElementById('loadingState');
@@ -222,51 +172,8 @@
 
         // Initialize
         function init() {
-            switchTab('video');
-        }
-
-        function switchTab(tabId) {
-            currentTab = tabId;
-            const data = tabData[tabId];
-
-            // Update Tabs UI
-            ['video', 'playlist', 'mp3'].forEach(id => {
-                const btn = document.getElementById(`tab-${id}`);
-                if (id === tabId) {
-                    btn.classList.replace('border-transparent', 'border-red-600');
-                    btn.classList.replace('text-[#aaaaaa]', 'text-white');
-                    btn.classList.remove('hover:text-white');
-                } else {
-                    btn.classList.replace('border-red-600', 'border-transparent');
-                    btn.classList.replace('text-white', 'text-[#aaaaaa]');
-                    btn.classList.add('hover:text-white');
-                }
-            });
-
-            // Update Input & Button
-            urlInput.placeholder = data.placeholder;
-            urlInput.value = '';
-            fetchBtnText.textContent = data.btnText;
-            
-            // Update Options
-            optionsRow.classList.add('hidden');
-
-            // Reset States
-            resetUI();
-        }
-
-        function populateOptions(tabId) {
-            const options = tabData[tabId].options;
-            qualitySelect.innerHTML = '';
-            if (options) {
-                options.forEach(opt => {
-                    const el = document.createElement('option');
-                    el.value = opt.val;
-                    el.textContent = opt.label;
-                    if (opt.selected) el.selected = true;
-                    qualitySelect.appendChild(el);
-                });
-            }
+            urlInput.placeholder = "Paste YouTube Video or Shorts URL...";
+            fetchBtnText.textContent = "Fetch Media";
         }
 
         async function pasteClipboard() {
@@ -407,56 +314,66 @@
             // Replace download buttons container
             const actionDiv = document.querySelector('#resultCard .mt-4.flex');
             actionDiv.innerHTML = '';
-            actionDiv.className = 'mt-4 flex flex-col gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar'; // Make it a vertical scrollable list
+            actionDiv.className = 'mt-4 flex flex-col gap-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar'; // Make it a vertical scrollable list
 
-            let targetResources = [];
+            let videoResources = [];
+            let audioResources = [];
+
             if (data.media) {
-                // Determine resource type based on tab
-                if (currentTab === 'video' || currentTab === 'playlist') {
-                    const videoMedia = data.media.find(m => m.type === 'video');
-                    if (videoMedia && videoMedia.resources) targetResources = videoMedia.resources;
-                } else if (currentTab === 'mp3') {
-                    const audioMedia = data.media.find(m => m.type === 'audio');
-                    if (audioMedia && audioMedia.resources) targetResources = audioMedia.resources;
-                }
+                const videoMedia = data.media.find(m => m.type === 'video');
+                if (videoMedia && videoMedia.resources) videoResources = videoMedia.resources;
+                
+                const audioMedia = data.media.find(m => m.type === 'audio');
+                if (audioMedia && audioMedia.resources) audioResources = audioMedia.resources;
             } else if (data.resources && Array.isArray(data.resources)) {
-                // Fallback for YouTube Shorts where data.media is null
-                if (currentTab === 'video' || currentTab === 'playlist') {
-                    targetResources = data.resources.filter(r => r.type === 'video');
-                } else if (currentTab === 'mp3') {
-                    targetResources = data.resources.filter(r => r.type === 'audio');
-                }
+                videoResources = data.resources.filter(r => r.type === 'video');
+                audioResources = data.resources.filter(r => r.type === 'audio');
             }
 
-            if (!targetResources || targetResources.length === 0) {
+            if (videoResources.length === 0 && audioResources.length === 0) {
                  actionDiv.innerHTML = '<p class="text-sm text-red-500">No matching formats found.</p>';
                  meta.textContent = `Size: Unknown • Format: N/A`;
                  return;
             }
 
-            meta.textContent = `Multiple qualities available.`;
+            meta.textContent = `Multiple qualities available below.`;
 
-            // Render buttons for each quality
-            targetResources.forEach(res => {
-                const btn = document.createElement('a');
-                btn.href = res.download_url;
-                btn.target = '_blank';
-                btn.rel = 'noopener noreferrer';
-                btn.className = "w-full bg-[#272727] hover:bg-[#3f3f3f] text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-between gap-2 text-sm border border-[#3f3f3f]";
-                
-                const formatLabel = `${res.format} - ${res.quality}`;
-                const sizeLabel = res.size ? (res.size / (1024*1024)).toFixed(1) + ' MB' : 'Unknown Size';
+            // Helper to render buttons
+            const renderButtons = (resources, iconPath, colorClass, typeName) => {
+                if (resources.length > 0) {
+                    const header = document.createElement('div');
+                    header.className = 'text-xs font-semibold text-[#aaaaaa] mt-2 mb-1 uppercase tracking-wider';
+                    header.textContent = typeName;
+                    actionDiv.appendChild(header);
 
-                btn.innerHTML = `
-                    <div class="flex items-center gap-2">
-                        <svg class="w-4 h-4 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                        <span class="truncate">Download ${formatLabel}</span>
-                    </div>
-                    <span class="text-xs text-[#aaaaaa] flex-shrink-0">${sizeLabel}</span>
-                `;
-                
-                actionDiv.appendChild(btn);
-            });
+                    resources.forEach(res => {
+                        const btn = document.createElement('a');
+                        btn.href = res.download_url;
+                        btn.target = '_blank';
+                        btn.rel = 'noopener noreferrer';
+                        btn.className = "w-full bg-[#272727] hover:bg-[#3f3f3f] text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-between gap-2 text-sm border border-[#3f3f3f]";
+                        
+                        const formatLabel = `${res.format} - ${res.quality}`;
+                        const sizeLabel = res.size ? (res.size / (1024*1024)).toFixed(1) + ' MB' : 'Unknown Size';
+
+                        btn.innerHTML = `
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 ${colorClass} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}"></path></svg>
+                                <span class="truncate">Download ${formatLabel}</span>
+                            </div>
+                            <span class="text-xs text-[#aaaaaa] flex-shrink-0">${sizeLabel}</span>
+                        `;
+                        
+                        actionDiv.appendChild(btn);
+                    });
+                }
+            };
+
+            const videoIcon = "M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z";
+            const audioIcon = "M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3";
+
+            renderButtons(videoResources, videoIcon, "text-red-500", "Video Formats");
+            renderButtons(audioResources, audioIcon, "text-green-500", "Audio Formats");
         }
 
         // Handle Enter Key
