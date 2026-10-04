@@ -138,24 +138,24 @@
                         </div>
                         
                         <!-- Details -->
-                        <div class="p-4 flex flex-col flex-grow justify-between">
-                            <div>
+                        <div class="p-4 flex flex-col flex-grow justify-between min-w-0">
+                            <div class="min-w-0">
                                 <h3 id="resultTitle" class="text-white font-medium text-base sm:text-lg line-clamp-2 leading-tight mb-2">
                                     Top 10 Coding Secrets They Don't Tell You
                                 </h3>
-                                <div class="flex items-center gap-2 text-[#aaaaaa] text-sm mb-1">
-                                    <span id="channelName">Tech Channel</span>
-                                    <span class="w-1 h-1 rounded-full bg-[#717171]"></span>
-                                    <span id="viewCount">1.2M views</span>
+                                <div class="flex items-center gap-2 text-[#aaaaaa] text-xs sm:text-sm mb-1 truncate">
+                                    <span id="channelName" class="truncate">Tech Channel</span>
+                                    <span class="w-1 h-1 rounded-full bg-[#717171] flex-shrink-0"></span>
+                                    <span id="viewCount" class="flex-shrink-0">1.2M views</span>
                                 </div>
-                                <p id="resultMeta" class="text-[#717171] text-xs">Size: ~45 MB • Format: MP4 (1080p)</p>
+                                <p id="resultMeta" class="text-[#717171] text-xs mt-1 truncate">Size: ~45 MB • Format: MP4 (1080p)</p>
                             </div>
                             
                             <!-- Download Actions -->
-                            <div class="mt-4 flex gap-3">
+                            <div id="actionContainer" class="mt-4 flex gap-3">
                                 <button onclick="triggerDownload()" class="flex-grow bg-[#272727] hover:bg-[#3f3f3f] text-white font-medium py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base border border-[#3f3f3f]">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                    <span id="downloadBtnText">Download Now</span>
+                                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    <span id="downloadBtnText" class="truncate">Download Now</span>
                                 </button>
                             </div>
                         </div>
@@ -323,9 +323,9 @@
             views.textContent = 'Extracted successfully';
 
             // Replace download buttons container
-            const actionDiv = document.querySelector('#resultCard .mt-4.flex');
+            const actionDiv = document.getElementById('actionContainer');
             actionDiv.innerHTML = '';
-            actionDiv.className = 'mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-64 overflow-y-auto pr-2 custom-scrollbar'; // 2 columns layout
+            actionDiv.className = 'mt-4 grid grid-cols-2 gap-2 sm:gap-4 max-h-64 overflow-y-auto pr-1 sm:pr-2 custom-scrollbar'; // 2 columns layout for all devices
 
             let videoResources = [];
             let audioResources = [];
