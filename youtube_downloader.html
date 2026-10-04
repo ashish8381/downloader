@@ -222,7 +222,7 @@
 
         // Initialize
         function init() {
-            populateOptions('video');
+            switchTab('video');
         }
 
         function switchTab(tabId) {
@@ -249,12 +249,7 @@
             fetchBtnText.textContent = data.btnText;
             
             // Update Options
-            if (data.options) {
-                optionsRow.classList.remove('hidden');
-                populateOptions(tabId);
-            } else {
-                optionsRow.classList.add('hidden');
-            }
+            optionsRow.classList.add('hidden');
 
             // Reset States
             resetUI();
@@ -289,12 +284,13 @@
             urlInput.classList.remove('border-red-500');
         }
 
-        function processFetch() {
+        async function processFetch() {
             const url = urlInput.value.trim();
             
             if (!url) {
                 urlInput.classList.add('border-red-500');
                 errorMsg.classList.remove('hidden');
+                errorMsg.textContent = "Please enter a valid YouTube URL.";
                 return;
             }
             
@@ -312,97 +308,123 @@
             resultCard.classList.add('hidden');
             progressBar.style.width = '0%';
 
-            // Simulate progress
+            // Simulate progress visually
             let progress = 0;
             const interval = setInterval(() => {
                 progress += Math.random() * 20;
-                if (progress > 90) progress = 90;
+                if (progress > 80) progress = 80;
                 progressBar.style.width = `${progress}%`;
             }, 300);
 
-            // Simulate Network Delay
-            setTimeout(() => {
+            try {
+                const apiUrl = `https://api.vidssave.com/api/contentsite_api/media/parse?auth=20250901majwlqo&link=${encodeURIComponent(url)}`;
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+
                 clearInterval(interval);
                 progressBar.style.width = '100%';
-                
+
+                if (!data || data.status !== 1 || !data.data) {
+                    throw new Error("Failed to parse video. Please check the URL and try again.");
+                }
+
                 setTimeout(() => {
                     loadingState.classList.add('hidden');
-                    updateMockData();
+                    updateRealData(data.data);
                     resultCard.classList.remove('hidden');
-                    // Scroll down slightly to show results
                     resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }, 400);
-            }, 2000);
+
+            } catch (err) {
+                clearInterval(interval);
+                progressBar.style.width = '0%';
+                loadingState.classList.add('hidden');
+                errorMsg.textContent = err.message || "An error occurred during fetch.";
+                errorMsg.classList.remove('hidden');
+                console.error(err);
+            }
         }
 
-        function updateMockData() {
+        function updateRealData(data) {
             const thumb = document.getElementById('resultThumb');
             const title = document.getElementById('resultTitle');
             const meta = document.getElementById('resultMeta');
             const badge = document.getElementById('durationBadge');
-            const dlBtn = document.getElementById('downloadBtnText');
-            const views = document.getElementById('viewCount');
             
-            const qualityText = qualitySelect.options[qualitySelect.selectedIndex]?.text || '';
+            thumb.src = data.thumbnail || 'https://placehold.co/640x360/0f0f0f/ff0000?text=Thumbnail';
+            title.textContent = data.title || 'YouTube Media';
+            
+            // Format duration
+            const durationSec = data.duration || 0;
+            const h = Math.floor(durationSec / 3600);
+            const m = Math.floor((durationSec % 3600) / 60);
+            const s = durationSec % 60;
+            let timeStr = '';
+            if (h > 0) timeStr += `${h}:`;
+            timeStr += `${m.toString().padStart(h > 0 ? 2 : 1, '0')}:${s.toString().padStart(2, '0')}`;
+            badge.textContent = timeStr;
 
-            if (currentTab === 'video') {
-                thumb.src = 'https://placehold.co/640x360/1a1a1a/ff0000?text=Video+Thumbnail';
-                title.textContent = 'Ultimate JavaScript Course for Beginners (2026)';
-                meta.textContent = `Size: ~145 MB • Format: ${qualityText}`;
-                badge.textContent = '1:24:05';
-                views.textContent = '845K views';
-                dlBtn.textContent = 'Download Video';
-            } else if (currentTab === 'playlist') {
-                thumb.src = 'https://placehold.co/640x360/1a1a1a/ffffff?text=Playlist';
-                title.textContent = 'Lofi Hip Hop Radio - Beats to Relax/Study to';
-                meta.textContent = `Total Videos: 24 • Total Size: ~1.2 GB`;
-                badge.textContent = 'PLAYLIST';
-                views.textContent = 'Updated Today';
-                dlBtn.textContent = 'Download ZIP';
-            } else if (currentTab === 'mp3') {
-                thumb.src = 'https://placehold.co/640x360/1a1a1a/1db954?text=Audio+Cover';
-                title.textContent = 'Synthwave Mix - Night Rider';
-                meta.textContent = `Size: ~8.4 MB • Format: ${qualityText}`;
-                badge.textContent = 'AUDIO';
-                views.textContent = 'Audio Extract';
-                dlBtn.textContent = 'Download MP3';
+            const channel = document.getElementById('channelName');
+            const views = document.getElementById('viewCount');
+            if (data.user_item && data.user_item.nickname) {
+                channel.textContent = data.user_item.nickname;
+            } else {
+                channel.textContent = 'YouTube User';
             }
+            views.textContent = 'Extracted successfully';
+
+            // Replace download buttons container
+            const actionDiv = document.querySelector('#resultCard .mt-4.flex');
+            actionDiv.innerHTML = '';
+            actionDiv.className = 'mt-4 flex flex-col gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar'; // Make it a vertical scrollable list
+
+            let targetResources = [];
+            if (data.media) {
+                // Determine resource type based on tab
+                if (currentTab === 'video' || currentTab === 'playlist') {
+                    const videoMedia = data.media.find(m => m.type === 'video');
+                    if (videoMedia && videoMedia.resources) targetResources = videoMedia.resources;
+                } else if (currentTab === 'mp3') {
+                    const audioMedia = data.media.find(m => m.type === 'audio');
+                    if (audioMedia && audioMedia.resources) targetResources = audioMedia.resources;
+                }
+            }
+
+            if (!targetResources || targetResources.length === 0) {
+                 actionDiv.innerHTML = '<p class="text-sm text-red-500">No matching formats found.</p>';
+                 meta.textContent = `Size: Unknown • Format: N/A`;
+                 return;
+            }
+
+            meta.textContent = `Multiple qualities available.`;
+
+            // Render buttons for each quality
+            targetResources.forEach(res => {
+                const btn = document.createElement('a');
+                btn.href = res.download_url;
+                btn.target = '_blank';
+                btn.rel = 'noopener noreferrer';
+                btn.className = "w-full bg-[#272727] hover:bg-[#3f3f3f] text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-between gap-2 text-sm border border-[#3f3f3f]";
+                
+                const formatLabel = `${res.format} - ${res.quality}`;
+                const sizeLabel = res.size ? (res.size / (1024*1024)).toFixed(1) + ' MB' : 'Unknown Size';
+
+                btn.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        <span class="truncate">Download ${formatLabel}</span>
+                    </div>
+                    <span class="text-xs text-[#aaaaaa] flex-shrink-0">${sizeLabel}</span>
+                `;
+                
+                actionDiv.appendChild(btn);
+            });
         }
 
         // Handle Enter Key
         urlInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') processFetch();
         });
-
-        // Mock Download
-        function triggerDownload() {
-            const btn = document.getElementById('downloadBtnText');
-            const originalText = btn.textContent;
-            const parent = btn.parentElement;
-            
-            btn.textContent = "Starting...";
-            parent.classList.add('opacity-75', 'cursor-not-allowed');
-            parent.classList.remove('hover:bg-[#3f3f3f]');
-            
-            setTimeout(() => {
-                btn.textContent = "Downloading (24%)...";
-                
-                setTimeout(() => {
-                    btn.textContent = "Saved to Device!";
-                    parent.classList.replace('bg-[#272727]', 'bg-green-600');
-                    parent.classList.replace('border-[#3f3f3f]', 'border-green-500');
-                    
-                    setTimeout(() => {
-                        // Reset
-                        btn.textContent = originalText;
-                        parent.classList.remove('opacity-75', 'cursor-not-allowed');
-                        parent.classList.add('hover:bg-[#3f3f3f]');
-                        parent.classList.replace('bg-green-600', 'bg-[#272727]');
-                        parent.classList.replace('border-green-500', 'border-[#3f3f3f]');
-                    }, 3000);
-                }, 1500);
-            }, 800);
-        }
 
         // Start
         window.onload = init;
