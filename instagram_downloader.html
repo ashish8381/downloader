@@ -68,6 +68,12 @@
 </head>
 <body class="min-h-screen relative overflow-x-hidden flex flex-col items-center py-10 px-4 sm:px-6">
 
+    <!-- Back Button -->
+    <a href="index.html" class="absolute top-4 left-4 sm:top-6 sm:left-6 text-zinc-400 hover:text-white transition-colors flex items-center gap-2 glass-panel px-3 py-2 sm:px-4 sm:py-2 rounded-xl z-50 shadow-lg">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+        <span class="font-medium text-sm hidden sm:inline">Home</span>
+    </a>
+
     <!-- Ambient Background -->
     <div class="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-pink-600/10 blur-[120px] pointer-events-none"></div>
     <div class="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600/10 blur-[120px] pointer-events-none"></div>
@@ -104,13 +110,11 @@
         <!-- App Interface -->
         <main class="glass-panel rounded-3xl p-4 sm:p-8 shadow-2xl w-full">
             
-            <!-- Tabs -->
-            <div class="relative mb-8">
-                <div class="flex overflow-x-auto no-scrollbar gap-2 pb-2" id="tabContainer">
-                    <!-- Tabs are generated via JS -->
+            <!-- Single Tab Header -->
+            <div class="flex border-b border-[rgba(255,255,255,0.08)] mb-6">
+                <div class="flex-1 pb-3 text-center font-medium border-b-2 border-pink-500 text-white pointer-events-none">
+                    Instagram Reels / Posts
                 </div>
-                <!-- Gradient fade for scroll indication on mobile -->
-                <div class="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-[#18181b] to-transparent pointer-events-none sm:hidden"></div>
             </div>
 
             <!-- Input Area -->
@@ -204,56 +208,11 @@
 
     <script>
         // Tab Configuration
-        const tabs = [
-            { id: 'reel', label: 'Reel', placeholder: 'Paste Instagram Reel URL...', type: 'Video', format: 'MP4' },
-            { id: 'profile', label: 'Profile', placeholder: 'Enter Instagram Username (e.g. @cristiano)...', type: 'DP', format: 'JPG' },
-            { id: 'post', label: 'Post', placeholder: 'Paste Instagram Photo/Video Post URL...', type: 'Post', format: 'JPG/MP4' },
-            { id: 'story', label: 'Story', placeholder: 'Paste Instagram Story URL...', type: 'Story', format: 'MP4' },
-            { id: 'highlight', label: 'Highlight', placeholder: 'Paste Highlight URL...', type: 'Highlight', format: 'ZIP' }
-        ];
-
-        let activeTabId = 'reel';
         const urlInput = document.getElementById('urlInput');
         const resultsArea = document.getElementById('resultsArea');
         const loadingState = document.getElementById('loadingState');
         const resultCard = document.getElementById('resultCard');
         const errorMsg = document.getElementById('errorMsg');
-
-        // Initialize Tabs
-        function renderTabs() {
-            const container = document.getElementById('tabContainer');
-            container.innerHTML = '';
-
-            tabs.forEach(tab => {
-                const isActive = tab.id === activeTabId;
-                
-                // Styling for active vs inactive tabs
-                const baseClasses = "whitespace-nowrap px-6 py-2.5 rounded-full font-medium text-sm transition-all cursor-pointer select-none";
-                const activeClasses = "ig-gradient-bg text-white shadow-md shadow-pink-500/20";
-                const inactiveClasses = "bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800 hover:text-white border border-zinc-700/50";
-
-                const btn = document.createElement('button');
-                btn.className = `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`;
-                btn.textContent = tab.label;
-                btn.onclick = () => switchTab(tab.id);
-
-                container.appendChild(btn);
-            });
-        }
-
-        function switchTab(tabId) {
-            activeTabId = tabId;
-            renderTabs();
-            
-            const activeTab = tabs.find(t => t.id === tabId);
-            urlInput.placeholder = activeTab.placeholder;
-            urlInput.value = '';
-            
-            // Reset state
-            resultsArea.classList.add('hidden');
-            errorMsg.classList.add('hidden');
-            urlInput.classList.remove('border-red-500', 'focus-within:border-red-500');
-        }
 
         // Mock Clipboard Paste (Works in modern browsers with permission)
         async function pasteClipboard() {
@@ -428,7 +387,9 @@
         }
 
         // Initialize on load
-        window.onload = renderTabs;
+        window.onload = () => {
+            urlInput.placeholder = 'Paste Instagram URL (Reel, Post, Profile, Story)...';
+        };
     </script>
     
     <!-- Firebase SDKs -->
