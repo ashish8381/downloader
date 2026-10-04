@@ -321,6 +321,8 @@
                 const response = await fetch(apiUrl);
                 const data = await response.json();
 
+                console.log("YouTube API Response:", data);
+
                 clearInterval(interval);
                 progressBar.style.width = '100%';
 
