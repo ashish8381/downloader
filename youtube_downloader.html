@@ -317,29 +317,53 @@
             }, 300);
 
             try {
-                const apiUrl = `https://api.vidssave.com/api/contentsite_api/media/parse?auth=20250901majwlqo&link=${encodeURIComponent(url)}`;
-                console.log("Calling API URL:", apiUrl);
+                // Use JSONP to bypass CORS and browser fingerprinting blocks
+                const callbackName = 'yt_callback_' + Math.round(100000 * Math.random());
+                const apiUrl = `https://api.vidssave.com/api/contentsite_api/media/parse?auth=20250901majwlqo&link=${encodeURIComponent(url)}&callback=${callbackName}`;
+                console.log("Calling API URL (JSONP):", apiUrl);
                 
-                const response = await fetch(apiUrl, {
-                    referrerPolicy: "no-referrer"
-                });
-                const data = await response.json();
+                window[callbackName] = function(data) {
+                    console.log("YouTube API Response:", data);
+                    clearInterval(interval);
+                    progressBar.style.width = '100%';
+                    
+                    // Cleanup script tag and global function
+                    delete window[callbackName];
+                    const scriptEl = document.getElementById(callbackName);
+                    if (scriptEl) scriptEl.remove();
 
-                console.log("YouTube API Response:", data);
+                    if (!data || data.status !== 1 || !data.data) {
+                        loadingState.classList.add('hidden');
+                        errorMsg.textContent = (data && data.msg) ? `API Error: ${data.msg}` : "Failed to parse video. Please check the URL and try again.";
+                        errorMsg.classList.remove('hidden');
+                        progressBar.style.width = '0%';
+                        return;
+                    }
 
-                clearInterval(interval);
-                progressBar.style.width = '100%';
+                    setTimeout(() => {
+                        loadingState.classList.add('hidden');
+                        updateRealData(data.data);
+                        resultCard.classList.remove('hidden');
+                        resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }, 400);
+                };
 
-                if (!data || data.status !== 1 || !data.data) {
-                    throw new Error("Failed to parse video. Please check the URL and try again.");
-                }
-
-                setTimeout(() => {
+                const script = document.createElement('script');
+                script.id = callbackName;
+                script.src = apiUrl;
+                
+                // Handle script load error
+                script.onerror = function() {
+                    clearInterval(interval);
+                    progressBar.style.width = '0%';
                     loadingState.classList.add('hidden');
-                    updateRealData(data.data);
-                    resultCard.classList.remove('hidden');
-                    resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }, 400);
+                    errorMsg.textContent = "Network error while calling API.";
+                    errorMsg.classList.remove('hidden');
+                    delete window[callbackName];
+                    script.remove();
+                };
+                
+                document.body.appendChild(script);
 
             } catch (err) {
                 clearInterval(interval);
