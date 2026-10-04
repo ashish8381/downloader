@@ -1,7 +1,4 @@
 {
-  "functions": {
-    "source": "functions"
-  },
   "hosting": {
     "site": "d0wnl0ader",
     "public": ".",
@@ -9,12 +6,6 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
-    ],
-    "rewrites": [
-      {
-        "source": "/api/ig",
-        "function": "igDownloader"
-      }
     ]
   }
 }

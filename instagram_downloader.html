@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Instagram Downloader Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
@@ -266,7 +267,7 @@
         }
 
         // Handle Fetch Process
-        function processFetch() {
+        async function processFetch() {
             const inputVal = urlInput.value.trim();
             
             // Basic validation
@@ -294,43 +295,109 @@
             loadingState.classList.remove('hidden');
             resultCard.classList.add('hidden');
 
-            let downloadUrl = "";
+            let container = document.getElementById('dynamicResultsContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'dynamicResultsContainer';
+                container.className = 'flex flex-col gap-6 w-full animate-slide-up mt-6';
+                resultsArea.appendChild(container);
+            }
+            container.innerHTML = '';
+            container.classList.add('hidden');
 
-            // Actual Network Request to Cloud Function
-            fetch(`/api/ig?url=${encodeURIComponent(inputVal)}`)
-                .then(res => res.json())
-                .then(data => {
-                    loadingState.classList.add('hidden');
-                    
-                    if (data.error || !data.success || !data.media || data.media.length === 0) {
-                        errorMsg.textContent = data.error || "Failed to find media. Account might be private.";
-                        errorMsg.classList.remove('hidden');
-                        return;
-                    }
-
-                    // Grab first media
-                    downloadUrl = data.media[0];
-
-                    document.getElementById('resultTypeBadge').textContent = "Media";
-                    document.getElementById('downloadBtnText').textContent = "Download Media";
-                    
-                    const img = document.getElementById('resultImage');
-                    // For preview, we might just use placeholder or first frame. instagram-url-direct sometimes just gives video URLs.
-                    img.src = downloadUrl; 
-                    // Fallback to placeholder if it's a direct video link that can't be rendered in img
-                    img.onerror = () => {
-                        img.src = 'https://placehold.co/400x500/18181b/dc2743?text=Media+Ready';
-                    };
-
-                    resultCard.classList.remove('hidden');
-                    resultsArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                })
-                .catch(err => {
-                    loadingState.classList.add('hidden');
-                    errorMsg.textContent = "An error occurred while fetching media.";
-                    errorMsg.classList.remove('hidden');
-                    console.error(err);
+            try {
+                // Encrypt URL for the API
+                const key = CryptoJS.enc.Utf8.parse('qwertyuioplkjhgf');
+                const encrypted = CryptoJS.AES.encrypt(inputVal, key, {
+                    mode: CryptoJS.mode.ECB,
+                    padding: CryptoJS.pad.Pkcs7
                 });
+                const encryptedUrlHex = encrypted.ciphertext.toString(CryptoJS.enc.Hex);
+
+                const response = await fetch('https://api.videodropper.app/allinone', {
+                    method: 'GET',
+                    headers: {
+                        'Url': encryptedUrlHex,
+                        'Sec-Ch-Ua-Platform': '"macOS"',
+                        'Accept-Language': 'en-US,en;q=0.9',
+                        'Sec-Ch-Ua': '"Chromium";v="151", "Not=A?Brand";v="99"',
+                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36',
+                        'Sec-Ch-Ua-Mobile': '?0',
+                        'Accept': '*/*',
+                        'Origin': 'https://videodropper.app',
+                        'Sec-Fetch-Site': 'same-site',
+                        'Sec-Fetch-Mode': 'cors',
+                        'Sec-Fetch-Dest': 'empty',
+                        'Referer': 'https://videodropper.app/',
+                        'Accept-Encoding': 'gzip, deflate, br',
+                        'Priority': 'u=1, i'
+                    }
+                });
+
+                if (!response.ok) throw new Error("API failed");
+                const data = await response.json();
+                
+                loadingState.classList.add('hidden');
+                container.classList.remove('hidden');
+                
+                if (data.image && Array.isArray(data.image)) {
+                    data.image.forEach((imgUrl, index) => {
+                        container.insertAdjacentHTML('beforeend', createMediaCard(imgUrl, 'Image', imgUrl));
+                    });
+                } else if (data.video && Array.isArray(data.video)) {
+                    data.video.forEach((vidObj, index) => {
+                        container.insertAdjacentHTML('beforeend', createMediaCard(vidObj.thumbnail, 'Video', vidObj.video));
+                    });
+                } else {
+                    throw new Error("No media found");
+                }
+                
+                // Scroll to results smoothly
+                resultsArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            } catch (err) {
+                loadingState.classList.add('hidden');
+                errorMsg.classList.remove('hidden');
+                errorMsg.querySelector('span').textContent = "Failed to extract media. Please check the URL.";
+                console.error(err);
+            }
+        }
+
+        function createMediaCard(thumbnail, type, downloadUrl) {
+            return `
+                <div class="bg-zinc-900/80 rounded-2xl border border-zinc-800 p-4 flex flex-col sm:flex-row gap-6">
+                    <div class="w-full sm:w-48 aspect-square sm:aspect-[4/5] bg-zinc-800 rounded-xl overflow-hidden relative flex-shrink-0">
+                        <img src="${thumbnail}" alt="Preview" class="w-full h-full object-cover">
+                        <div class="absolute top-2 right-2 bg-black/60 backdrop-blur-sm px-2 py-1 rounded text-xs font-semibold text-white uppercase">
+                            ${type}
+                        </div>
+                    </div>
+                    
+                    <div class="flex-grow flex flex-col justify-between py-2">
+                        <div>
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden flex items-center justify-center text-zinc-400 font-bold">
+                                    IG
+                                </div>
+                                <div>
+                                    <h4 class="text-white font-semibold text-sm">Instagram Extractor</h4>
+                                    <p class="text-zinc-500 text-xs">Ready for download</p>
+                                </div>
+                            </div>
+                            <p class="text-zinc-300 text-sm line-clamp-3 mb-4">
+                                Successfully extracted ${type.toLowerCase()} media.
+                            </p>
+                        </div>
+                        
+                        <div class="flex gap-3 mt-auto">
+                            <a href="${downloadUrl}" target="_blank" rel="noopener noreferrer" class="flex-grow ig-gradient-bg text-white font-semibold py-3 px-4 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                <span>Download ${type}</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
 
         // Input Enter Key handler
@@ -340,23 +407,24 @@
             }
         });
 
-        // Actual Download Action
+        // Mock Download Action
         function triggerDownload() {
-            if (!downloadUrl) return;
-
             const btn = document.getElementById('downloadBtnText');
             const originalText = btn.textContent;
             
-            // Open media in new tab to trigger download
-            window.open(downloadUrl, '_blank');
-            
-            btn.textContent = "Opened!";
-            btn.parentElement.classList.add('opacity-75');
+            btn.textContent = "Downloading...";
+            btn.parentElement.classList.add('opacity-75', 'cursor-not-allowed');
             
             setTimeout(() => {
-                btn.textContent = originalText;
-                btn.parentElement.classList.remove('opacity-75');
-            }, 2000);
+                btn.textContent = "Saved!";
+                btn.parentElement.classList.remove('opacity-75', 'cursor-not-allowed');
+                btn.parentElement.classList.replace('ig-gradient-bg', 'bg-green-500');
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.parentElement.classList.replace('bg-green-500', 'ig-gradient-bg');
+                }, 2000);
+            }, 1000);
         }
 
         // Initialize on load
