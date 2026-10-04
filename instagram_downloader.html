@@ -294,39 +294,43 @@
             loadingState.classList.remove('hidden');
             resultCard.classList.add('hidden');
 
-            const activeTab = tabs.find(t => t.id === activeTabId);
+            let downloadUrl = "";
 
-            // Simulate Network Request (1.5 seconds)
-            setTimeout(() => {
-                loadingState.classList.add('hidden');
-                
-                // Populate Mock Data based on tab type
-                document.getElementById('resultTypeBadge').textContent = activeTab.type;
-                document.getElementById('downloadBtnText').textContent = `Download ${activeTab.format}`;
-                
-                const img = document.getElementById('resultImage');
-                // Change placeholder aspect ratio/text based on type
-                if (activeTabId === 'profile') {
-                    img.src = 'https://placehold.co/400x400/18181b/ec4899?text=Profile+Pic';
-                    img.parentElement.classList.replace('sm:aspect-[4/5]', 'sm:aspect-square');
-                    img.parentElement.classList.add('rounded-full', 'sm:rounded-xl'); // Circle on mobile, square on desktop
-                } else if (activeTabId === 'story') {
-                    img.src = 'https://placehold.co/400x700/18181b/e6683c?text=Story';
-                    img.parentElement.classList.replace('sm:aspect-square', 'sm:aspect-[9/16]');
-                    img.parentElement.classList.remove('rounded-full');
-                } else {
-                    img.src = 'https://placehold.co/400x500/18181b/dc2743?text=Media';
-                    img.parentElement.classList.replace('sm:aspect-square', 'sm:aspect-[4/5]');
-                    img.parentElement.classList.replace('sm:aspect-[9/16]', 'sm:aspect-[4/5]');
-                    img.parentElement.classList.remove('rounded-full');
-                }
+            // Actual Network Request to Cloud Function
+            fetch(`/api/ig?url=${encodeURIComponent(inputVal)}`)
+                .then(res => res.json())
+                .then(data => {
+                    loadingState.classList.add('hidden');
+                    
+                    if (data.error || !data.success || !data.media || data.media.length === 0) {
+                        errorMsg.textContent = data.error || "Failed to find media. Account might be private.";
+                        errorMsg.classList.remove('hidden');
+                        return;
+                    }
 
-                resultCard.classList.remove('hidden');
-                
-                // Scroll to results smoothly
-                resultsArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                
-            }, 1500);
+                    // Grab first media
+                    downloadUrl = data.media[0];
+
+                    document.getElementById('resultTypeBadge').textContent = "Media";
+                    document.getElementById('downloadBtnText').textContent = "Download Media";
+                    
+                    const img = document.getElementById('resultImage');
+                    // For preview, we might just use placeholder or first frame. instagram-url-direct sometimes just gives video URLs.
+                    img.src = downloadUrl; 
+                    // Fallback to placeholder if it's a direct video link that can't be rendered in img
+                    img.onerror = () => {
+                        img.src = 'https://placehold.co/400x500/18181b/dc2743?text=Media+Ready';
+                    };
+
+                    resultCard.classList.remove('hidden');
+                    resultsArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                })
+                .catch(err => {
+                    loadingState.classList.add('hidden');
+                    errorMsg.textContent = "An error occurred while fetching media.";
+                    errorMsg.classList.remove('hidden');
+                    console.error(err);
+                });
         }
 
         // Input Enter Key handler
@@ -336,24 +340,23 @@
             }
         });
 
-        // Mock Download Action
+        // Actual Download Action
         function triggerDownload() {
+            if (!downloadUrl) return;
+
             const btn = document.getElementById('downloadBtnText');
             const originalText = btn.textContent;
             
-            btn.textContent = "Downloading...";
-            btn.parentElement.classList.add('opacity-75', 'cursor-not-allowed');
+            // Open media in new tab to trigger download
+            window.open(downloadUrl, '_blank');
+            
+            btn.textContent = "Opened!";
+            btn.parentElement.classList.add('opacity-75');
             
             setTimeout(() => {
-                btn.textContent = "Saved!";
-                btn.parentElement.classList.remove('opacity-75', 'cursor-not-allowed');
-                btn.parentElement.classList.replace('ig-gradient-bg', 'bg-green-500');
-                
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                    btn.parentElement.classList.replace('bg-green-500', 'ig-gradient-bg');
-                }, 2000);
-            }, 1000);
+                btn.textContent = originalText;
+                btn.parentElement.classList.remove('opacity-75');
+            }, 2000);
         }
 
         // Initialize on load
