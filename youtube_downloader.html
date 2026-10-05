@@ -376,14 +376,46 @@
                         
                         const formatLabel = `${res.format} - ${res.quality}`;
                         const sizeLabel = res.size ? (res.size / (1024*1024)).toFixed(1) + ' MB' : 'Unknown Size';
+                        const fileName = `YouTube_${res.quality}_${res.format}.${res.format.toLowerCase()}`;
 
                         btn.innerHTML = `
                             <div class="flex items-center gap-2 overflow-hidden">
                                 <svg class="w-4 h-4 ${colorClass} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}"></path></svg>
-                                <span class="truncate text-xs sm:text-sm">Download ${formatLabel}</span>
+                                <span class="truncate text-xs sm:text-sm download-text">Download ${formatLabel}</span>
                             </div>
                             <span class="text-[10px] sm:text-xs text-[#aaaaaa] flex-shrink-0">${sizeLabel}</span>
                         `;
+                        
+                        btn.onclick = async (e) => {
+                            e.preventDefault();
+                            const textSpan = btn.querySelector('.download-text');
+                            const originalText = textSpan.textContent;
+                            textSpan.textContent = 'Downloading...';
+                            btn.style.opacity = '0.7';
+                            btn.style.pointerEvents = 'none';
+
+                            try {
+                                const response = await fetch(res.download_url);
+                                if (!response.ok) throw new Error('Network response was not ok');
+                                const blob = await response.blob();
+                                const blobUrl = window.URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = blobUrl;
+                                a.download = fileName;
+                                document.body.appendChild(a);
+                                a.click();
+                                a.remove();
+                                window.URL.revokeObjectURL(blobUrl);
+                            } catch (err) {
+                                console.warn('Direct download failed, falling back to new tab:', err);
+                                window.open(res.download_url, '_blank');
+                                alert("File opened in a new tab. Please long-press (or right-click) the video/audio to save it to your device.");
+                            } finally {
+                                textSpan.textContent = originalText;
+                                btn.style.opacity = '1';
+                                btn.style.pointerEvents = 'auto';
+                            }
+                        };
                         
                         container.appendChild(btn);
                     });

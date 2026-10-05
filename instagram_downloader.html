@@ -323,7 +323,40 @@
             }
         }
 
+        window.forceDownload = async function(e, url, defaultFilename) {
+            e.preventDefault();
+            const btn = e.currentTarget;
+            const textSpan = btn.querySelector('span');
+            const originalText = textSpan ? textSpan.textContent : 'Download';
+            if(textSpan) textSpan.textContent = 'Downloading...';
+            btn.style.opacity = '0.7';
+            btn.style.pointerEvents = 'none';
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = defaultFilename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(blobUrl);
+            } catch (err) {
+                console.warn('Direct download failed, falling back to new tab:', err);
+                window.open(url, '_blank');
+                alert("File opened in a new tab. Please long-press (or right-click) the video/image to save it to your device.");
+            } finally {
+                if(textSpan) textSpan.textContent = originalText;
+                btn.style.opacity = '1';
+                btn.style.pointerEvents = 'auto';
+            }
+        };
+
         function createMediaCard(thumbnail, type, downloadUrl) {
+            const fileName = `Instagram_${type}_${Date.now()}.${type === 'Video' ? 'mp4' : 'jpg'}`;
             return `
                 <div class="bg-zinc-900/80 rounded-2xl border border-zinc-800 p-4 flex flex-col sm:flex-row gap-6">
                     <div class="w-full sm:w-48 aspect-square sm:aspect-[4/5] bg-zinc-800 rounded-xl overflow-hidden relative flex-shrink-0">
@@ -350,8 +383,8 @@
                         </div>
                         
                         <div class="flex gap-3 mt-auto">
-                            <a href="${downloadUrl}" target="_blank" rel="noopener noreferrer" class="flex-grow ig-gradient-bg text-white font-semibold py-3 px-4 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            <a href="${downloadUrl}" onclick="forceDownload(event, '${downloadUrl}', '${fileName}')" class="flex-grow ig-gradient-bg text-white font-semibold py-3 px-4 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                 <span>Download ${type}</span>
                             </a>
                         </div>
